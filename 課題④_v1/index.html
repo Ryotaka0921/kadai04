@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>solotter</title>
+        <link rel="stylesheet" href="css/reset.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+    <body>
+ß
+        <header>
+            <div class="logo_fadein">
+                <p><img src="画像/Twitter-logo.svg" alt="logo"></p>
+                </div>                
+            <div class="header-logo">
+                <img src="画像/twitter-48.png" alt="logo">
+            </div>
+            <div class="header-title">
+                <h1 class="header header-wrapper">solotter</h1>
+            </div>
+        </header>
+
+        <main>
+            <div class="centerposition">
+                <input type="text" id="textbox" class="tweetbox" placeholder="いまどうしてる?">
+            </div>
+            <button id="tweet" class="tweetbtn">ツイートする</button>
+            <button id="clear" class="cancelbtn">やっぱり消す</button>
+        </main>
+        
+        <table id="list" class="timeline">
+        </table>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script type="module">
+            /*===============
+                FIREBASE
+            ================*/
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+            import {
+            getDatabase,
+            ref,
+            push,
+            set,
+            onChildAdded,
+            remove,
+            onChildRemoved,
+            } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+            apiKey: "***********************",
+            authDomain: "***********************",
+            databaseURL: "***********************",
+            projectId: "***********************",
+            storageBucket: "***********************",
+            messagingSenderId: "***********************",
+            appId: "***********************",
+            };
+            const app = initializeApp(firebaseConfig);
+            const db  = getDatabase(app); //RealtimeDBに接続
+            const dbRef = ref(db,"timeline"); //RealtimeDB内の"chat"を使う⏩勝手に「chat」というフォルダを作ってくれる❗️
+
+            /*===============
+            起動時アニメーション
+            ================*/
+            $(function() {
+                setTimeout(function(){
+                    $('.logo_fadein p').fadeIn(500);
+                },250);
+                setTimeout(function(){
+                    $('.logo_fadein').fadeOut(500);
+                },750);
+            });
+
+            /*===============
+                送信ボタン
+            ================*/
+
+            $("#tweet").on("click", function () {
+                var dateObj = new Date();
+                var text = '';
+                var aryWeek = ['日', '月', '火', '水', '木', '金', '土'];
+
+                const time = dateObj.getFullYear() + "-" +//年の取得
+                ('00' + (dateObj.getMonth() + 1)).slice(-2) + "-" +//月の取得 ※0~11で取得になるため+1
+                ('00' + dateObj.getDate()).slice(-2) + " " + //日付の取得
+                ('00' + dateObj.getHours()).slice(-2) + ":" +//時間の取得
+                ('00' + dateObj.getMinutes()).slice(-2) + ":" +//分の取得
+                ('00' + dateObj.getSeconds()).slice(-2) ;
+
+                const key = time;
+                const memo =  $("#textbox").val(); 
+
+                const msg = {
+                    key: key,
+                    memo: memo,
+                };
+
+                const newPostRef = push(dbRef);
+                set(newPostRef, msg)
+
+                $("#textbox").val(""); // ツイート後テキストボックスないをクリア
+
+            });
+
+            /*===============
+                受信処理
+            ================*/
+            onChildAdded(dbRef, function (data) {
+                const msg = data.val();
+                const kagi = data.key; //Firebase上の固有のKeyを取得
+
+                // テンプレートリテラル
+                let tweetlist = `
+                    <div class=${kagi}>
+                        <tr>
+                            <td> <img src="画像/ED0_zIUUcAAglKH.jpeg" class="tweetimage" alt="logo"></td> 
+                            <td class="thtag">${msg.key}</td> 
+                            <td class="tdtag">${msg.memo}</td>
+                        </tr>
+                    <div/>
+                    `;
+                $("#list").append(tweetlist);
+
+            });
+
+            /*===============
+                取消ボタン
+            ================*/
+
+            $("#clear").on("click" ,function(){ 
+                localStorage.clear();
+                $("#list").empty(); 
+            })
+
+            /*===============
+                起動時 表反映
+            ================*/
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i); 
+                const value = localStorage.getItem(key); 
+
+                const html = `
+                    <tr>
+                        <th class="thtag">${key}</th> 
+                        <td class="tdtag">${value}</td>
+                    </tr>
+                `;
+                
+                $("#list").append(html);
+            }
+
+        </script>
+
+    </body>
+</html>
